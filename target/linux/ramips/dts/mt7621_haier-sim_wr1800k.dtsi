@@ -1,0 +1,159 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
+#include "mt7621.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	aliases {
+		label-mac-device = &gmac1;
+		led-boot = &led_status_red;
+		led-failsafe = &led_status_blue;
+		led-running = &led_status_green;
+		led-upgrade = &led_status_blue;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+		bootargs-override = "console=ttyS0,115200";
+	};
+
+	keys {
+		compatible = "gpio-keys";
+
+		reset {
+			label = "reset";
+			gpios = <&gpio 18 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+		};
+
+		wps {
+			label = "wps";
+			gpios = <&gpio 4 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_WPS_BUTTON>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led_status_blue: led-0 {
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_STATUS;
+			gpios = <&gpio 6 GPIO_ACTIVE_LOW>;
+		};
+
+		led_status_green: led-1 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_STATUS;
+			gpios = <&gpio 8 GPIO_ACTIVE_LOW>;
+		};
+
+		led_status_red: led-2 {
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_STATUS;
+			gpios = <&gpio 7 GPIO_ACTIVE_LOW>;
+		};
+	};
+};
+
+&nand {
+	status = "okay";
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		partition@0 {
+			label = "u-boot";
+			reg = <0x0000000 0x0080000>;
+			read-only;
+		};
+
+		partition@80000 {
+			label = "u-boot-env";
+			reg = <0x0080000 0x0080000>;
+		};
+
+		partition@100000 {
+			label = "factory";
+			reg = <0x0100000 0x0080000>;
+			read-only;
+			};
+		};
+
+		partition@180000 {
+			label = "firmware";
+			reg = <0x0180000 0x7a80000>;
+
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "kernel";
+				reg = <0x0000000 0x0400000>;
+			};
+
+			partition@400000 {
+				label = "ubi";
+				reg = <0x0400000 0x7680000>;
+			};
+		};
+
+		/* last 128KiB *32 is reserved for bad blocks management */
+	};
+};
+
+&pcie {
+	status = "okay";
+};
+
+&pcie1 {
+	wifi@0,0 {
+		compatible = "mediatek,mt76";
+		reg = <0x0000 0 0 0 0>;
+		mediatek,mtd-eeprom = <&factory 0x0>;
+		mediatek,disable-radar-background;
+	};
+};
+
+&gmac0 {
+	mtd-mac-address = <&factory 0x8004 0x6>;
+};
+
+&gmac1 {
+	mtd-mac-address = <&factory 0x8004 0x3>;
+	status = "okay";
+};
+
+&gsw {
+	mediatek,portmap = "llllw";
+	status = "okay";
+};
+
+&hnat {
+	mtketh-wan = "eth1";
+	mtketh-ppd = "eth0";
+	mtketh-lan = "eth0";
+	mtketh-max-gmac = <2>;
+	/delete-property/ mtkdsa-wan-port;
+};
+
+&state_default {
+	gpio {
+		groups = "i2c", "uart3", "wdt";
+		function = "gpio";
+	};
+};
+
+&switch0 {
+	status = "disabled";
+};
+
+&xhci {
+	status = "disabled";
+};
